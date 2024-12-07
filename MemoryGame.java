@@ -1,4 +1,4 @@
-package MemoryGame;  // Pastikan nama package sesuai dengan folder
+package MemoryGame; // Pastikan nama package sesuai dengan folder
 
 import HomePage.HomePage; // Import halaman home
 
@@ -12,48 +12,84 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class MemoryGame extends JFrame {
-    private final int GRID_SIZE = 4; // 4x4 grid
-    private JButton[][] buttons = new JButton[GRID_SIZE][GRID_SIZE];
-    private String[][] images = new String[GRID_SIZE][GRID_SIZE];
+    private int rows = 4;
+    private int cols = 4;
+    private JButton[][] buttons;
+    private String[][] images;
     private ArrayList<String> imageList = new ArrayList<>();
     private JButton firstSelected = null;
     private JButton secondSelected = null;
     private Timer timer;
-    
+    private int currentLevel = 1;
+    private int elapsedTime = 0; // Waktu yang telah berjalan dalam detik
+    private JLabel timerLabel;
+
     public MemoryGame() {
         setTitle("Memory Card Game");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new GridLayout(GRID_SIZE, GRID_SIZE));
-        setSize(600, 600);
+        setSize(800, 600);
+        setLayout(new BorderLayout());
+        getContentPane().setBackground(new Color(220, 220, 220)); // Light gray background
 
-        // Load images from database
+        // Panel untuk grid permainan
+        JPanel gamePanel = new JPanel();
+        gamePanel.setLayout(new GridLayout(rows, cols));
+        gamePanel.setBackground(new Color(255, 255, 255)); // White background for the game area
+        add(gamePanel, BorderLayout.CENTER);
+
+        // Timer Label di bawah grid
+        timerLabel = new JLabel("Waktu: 0 detik", JLabel.CENTER);
+        timerLabel.setFont(new Font("Comic Sans MS", Font.BOLD, 24));
+        timerLabel.setForeground(Color.RED); // Change to a more vibrant color
+        add(timerLabel, BorderLayout.SOUTH);
+
         loadImagesFromDatabase();
-
-        // Initialize grid
-        initializeGrid();
-
+        initializeLevel();
         setVisible(true);
+    }
+
+    private void initializeLevel() {
+        getContentPane().removeAll();
+        setLayout(new BorderLayout());
+
+        // Panel untuk grid permainan
+        JPanel gamePanel = new JPanel();
+        gamePanel.setLayout(new GridLayout(rows, cols));
+        buttons = new JButton[rows][cols];
+        images = new String[rows][cols];
+        loadImagesForLevel(); // Pastikan gambar sesuai level
+        initializeGrid(gamePanel); // Initialize the grid
+
+        // Tambahkan gamePanel ke frame
+        add(gamePanel, BorderLayout.CENTER);
+
+        // Inisialisasi timer
+        elapsedTime = 0;
+        startTimer();
+
+        // Timer Label di bawah grid
+        timerLabel = new JLabel("Waktu: 0 detik", JLabel.CENTER);
+        timerLabel.setFont(new Font("Comic Sans MS", Font.BOLD, 24)); // Ukuran font ditingkatkan
+        timerLabel.setForeground(Color.RED); // Warna diubah untuk visibilitas yang lebih baik
+        add(timerLabel, BorderLayout.SOUTH);
+
+        revalidate();
+        repaint();
     }
 
     private void loadImagesFromDatabase() {
         String dbUrl = "jdbc:mysql://localhost:3306/memory_game"; // URL database MySQL
         String dbUser = "root"; // Username MySQL
         String dbPassword = ""; // Password MySQL
-        String query = "SELECT image_path FROM cards LIMIT 8"; // Query untuk mengambil 8 gambar
 
         try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
              Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+             ResultSet rs = stmt.executeQuery("SELECT image_path FROM cards")) {
 
-            // Load images into list
             while (rs.next()) {
                 String imagePath = rs.getString("image_path");
                 imageList.add(imagePath);
-                imageList.add(imagePath); // Duplicate for pairs
             }
-
-            // Shuffle the image list
-            Collections.shuffle(imageList);
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -61,35 +97,62 @@ public class MemoryGame extends JFrame {
         }
     }
 
-    private void initializeGrid() {
+    private void loadImagesForLevel() {
+        ArrayList<String> levelImages = new ArrayList<>();
+        int pairsNeeded = (rows * cols) / 2;
+
+        if (imageList.size() < pairsNeeded) {
+            JOptionPane.showMessageDialog(this, "Not enough images in the database!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Ambil gambar sebanyak pasangan yang dibutuhkan untuk level ini
+        for (int i = 0; i < pairsNeeded; i++) {
+            levelImages.add(imageList.get(i));
+        }
+
+        // Gandakan untuk pasangan dan acak
+        levelImages.addAll(new ArrayList<>(levelImages));
+        Collections.shuffle(levelImages);
+
+        // Pastikan grid terisi dengan gambar yang sudah diacak
         int index = 0;
-        for (int i = 0; i < GRID_SIZE; i++) {
-            for (int j = 0; j < GRID_SIZE; j++) {
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                images[i][j] = levelImages.get(index++);
+            }
+        }
+    }
+
+    private void initializeGrid(JPanel gamePanel) {
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
                 JButton button = new JButton();
                 button.setFocusPainted(false);
+                button.setBackground(new Color(100, 150, 200)); // Button color
+                button.setForeground(Color.WHITE);
+                button.setFont(new Font("Arial", Font.PLAIN, 18)); // Font for buttons
+                button.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2)); // Border for buttons
                 buttons[i][j] = button;
 
-                // Assign images from the shuffled list
-                images[i][j] = imageList.get(index);
                 button.putClientProperty("image", images[i][j]);
 
                 button.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        SoundPlayer.playSound("/Users/raflikardiansyah/Documents/Semester 5/PBO/project/Sound/click.wav"); // Mainkan suara klik
+                        SoundPlayer.playSound("/Users/raflikardiansyah/Documents/Semester 5/PBO/project/Sound/click.wav");
                         onButtonClick(button);
                     }
                 });
-                add(button);
 
-                index++;
+                gamePanel.add(button);
             }
         }
     }
 
     private void onButtonClick(JButton button) {
         if (firstSelected != null && secondSelected != null) {
-            return; // Tunggu timer selesai
+            return;
         }
 
         String imagePath = (String) button.getClientProperty("image");
@@ -98,7 +161,7 @@ public class MemoryGame extends JFrame {
             ImageIcon icon = new ImageIcon(imagePath);
             Image img = icon.getImage();
             Image scaledImg = img.getScaledInstance(button.getWidth(), button.getHeight(), Image.SCALE_SMOOTH);
-            button.setIcon(new ImageIcon(scaledImg)); // Tampilkan gambar
+            button.setIcon(new ImageIcon(scaledImg));
         } else {
             JOptionPane.showMessageDialog(this, "Image not found: " + imagePath, "Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -113,32 +176,23 @@ public class MemoryGame extends JFrame {
 
     private void checkMatch() {
         if (firstSelected.getClientProperty("image").equals(secondSelected.getClientProperty("image"))) {
-            // Jika kartu cocok
             firstSelected.setEnabled(false);
             secondSelected.setEnabled(false);
-            
-            // Mainkan suara kemenangan jika semua kartu ditemukan
-            SoundPlayer.playSound("/Users/raflikardiansyah/Documents/Semester 5/PBO/project/Sound/win.wav");
-            
-            // Cek jika semua kartu sudah ditemukan
+            SoundPlayer.playSound("/Users/raflikardiansyah/Documents/Semester 5/PBO/project/Sound/win.wav"); // Suara kartu cocok
             checkGameCompletion();
-            
             resetSelection();
         } else {
-            // Mainkan suara kekalahan jika kartu tidak cocok
-            SoundPlayer.playSound("/Users/raflikardiansyah/Documents/Semester 5/PBO/project/Sound/fail.wav");
-
-            // Jika kartu tidak cocok, sembunyikan setelah 1 detik
-            timer = new Timer(1000, new ActionListener() {
+            SoundPlayer.playSound("/Users/raflikardiansyah/Documents/Semester 5/PBO/project/Sound/fail.wav"); // Suara kartu tidak cocok
+            Timer tempTimer = new Timer(1000, new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     firstSelected.setIcon(null);
                     secondSelected.setIcon(null);
                     resetSelection();
-                    timer.stop();
+                    ((Timer)e.getSource()).stop(); // Hentikan timer sementara
                 }
             });
-            timer.start();
+            tempTimer.start();
         }
     }
 
@@ -149,45 +203,100 @@ public class MemoryGame extends JFrame {
 
     private void checkGameCompletion() {
         if (allCardsMatched()) {
-            // Mainkan suara tepuk tangan saat selesai
-            SoundPlayer.playSound("/Users/raflikardiansyah/Documents/Semester 5/PBO/project/Sound/game.wav");
+            // Hentikan timer untuk memperbarui waktu
+            if (timer != null) {
+                timer.stop();
+            }
 
-            // Tampilkan dialog pilihan kepada user
-        int choice = JOptionPane.showOptionDialog(
-            this,
-            "Selamat, Anda telah menyelesaikan permainan!\nApa yang ingin Anda lakukan selanjutnya?",
-            "Game Over",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            new String[]{"Main Ulang", "Kembali ke Home"}, // Pilihan
-            "Main Ulang"
-    );
+            // Hentikan pembaruan tampilan waktu
+            timerLabel.setText("Waktu: " + elapsedTime + " detik (selesai)");
 
-    if (choice == JOptionPane.YES_OPTION) {
-        // Main ulang
-        dispose();
-        new MemoryGame();
-    } else {
-        // Kembali ke halaman home
-        dispose();
-        new HomePage();
-    }
-        }
+            // Simpan waktu pengguna ke database
+            saveTimeToDatabase(elapsedTime);
 
-        }
-    
+            if (currentLevel < 3) {
+                SoundPlayer.playSound("/Users/raflikardiansyah/Documents/Semester 5/PBO/project/Sound/levelup.wav"); // Suara level selesai
+                int choice = JOptionPane.showOptionDialog(
+                        this,
+                        "Selamat, Anda telah menyelesaikan Level " + currentLevel + "!\nApakah Anda ingin melanjutkan ke level berikutnya?",
+                        "Level Selesai",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        new String[]{"Next", "Back to Home"},
+                        "Next"
+                );
 
-    private boolean allCardsMatched() {
-        // Logika untuk mengecek apakah semua kartu sudah dicocokkan
-        for (int i = 0; i < GRID_SIZE; i++) {
-            for (int j = 0; j < GRID_SIZE; j++) {
-                if (buttons[i][j].isEnabled()) {
-                    return false; // Jika ada kartu yang belum dicocokkan
+                if (choice == JOptionPane.YES_OPTION) {
+                    currentLevel++;
+                    cols = (currentLevel == 2) ? 5 : 6; // Update jumlah kolom untuk level 2 dan 3
+                    initializeLevel();
+                } else {
+                    dispose();
+                    new HomePage();
+                }
+            } else {
+                SoundPlayer.playSound("/Users/raflikardiansyah/Documents/Semester 5/PBO/project/Sound/game.wav"); // Suara game selesai
+                int choice = JOptionPane.showOptionDialog(
+                        this,
+                        "Selamat, Anda telah menyelesaikan semua level!\nApa yang ingin Anda lakukan selanjutnya?",
+                        "Game Over",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        new String[]{"Play Again", "Back to Home"},
+                        "Play Again"
+                );
+
+                if (choice == JOptionPane.YES_OPTION) {
+                    currentLevel = 1;
+                    cols = 4; // Reset ke jumlah kolom level 1
+                    initializeLevel();
+                } else {
+                    dispose();
+                    new HomePage();
                 }
             }
         }
-        return true; // Semua kartu sudah dicocokkan
+    }
+
+    private boolean allCardsMatched() {
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                if (buttons[i][j].isEnabled()) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private void startTimer() {
+        timer = new Timer(1000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                elapsedTime++;
+                timerLabel.setText("Waktu: " + elapsedTime + " detik");
+            }
+        });
+        timer.start();
+    }
+
+    private void saveTimeToDatabase(int time) {
+        String dbUrl = "jdbc:mysql://localhost:3306/memory_game"; // URL database MySQL
+        String dbUser = "root"; // Username MySQL
+        String dbPassword = ""; // Password MySQL
+
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
+            String query = "INSERT INTO game_times (level, time_taken) VALUES (?, ?)";
+            try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+                pstmt.setInt(1, currentLevel);
+                pstmt.setInt(2, time);
+                pstmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {
