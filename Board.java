@@ -31,7 +31,7 @@ public class Board {
     }
 
     public void generateRandomTile() {
-        int value = random.nextInt(10) == 0 ? 4 : 2; // 10% chance of 4
+        int value = random.nextInt(10) == 0 ? 4 : 2;
         int x, y;
         do {
             x = random.nextInt(BOARD_SIZE);
@@ -45,14 +45,14 @@ public class Board {
         for (int i = 0; i < BOARD_SIZE; i++) {
             Tile[] line = new Tile[BOARD_SIZE];
             for (int j = 0; j < BOARD_SIZE; j++) {
-                line[j] = board[i][j]; // Copy the row
+                line[j] = board[i][j]; 
             }
             Tile[] newLine = shiftAndMerge(line);
             for (int j = 0; j < BOARD_SIZE; j++) {
                 if (!board[i][j].equals(newLine[j])) {
-                    moved = true; // Check if the board changed
+                    moved = true; 
                 }
-                board[i][j] = newLine[j]; // Update the board
+                board[i][j] = newLine[j]; 
             }
         }
         if (moved) generateRandomTile();
@@ -64,14 +64,14 @@ public class Board {
         for (int i = 0; i < BOARD_SIZE; i++) {
             Tile[] line = new Tile[BOARD_SIZE];
             for (int j = 0; j < BOARD_SIZE; j++) {
-                line[j] = board[i][BOARD_SIZE - 1 - j]; // Reverse row
+                line[j] = board[i][BOARD_SIZE - 1 - j]; 
             }
             Tile[] newLine = shiftAndMerge(line);
             for (int j = 0; j < BOARD_SIZE; j++) {
                 if (!board[i][BOARD_SIZE - 1 - j].equals(newLine[j])) {
                     moved = true;
                 }
-                board[i][BOARD_SIZE - 1 - j] = newLine[j]; // Reverse back
+                board[i][BOARD_SIZE - 1 - j] = newLine[j];
             }
         }
         if (moved) generateRandomTile();
@@ -83,14 +83,14 @@ public class Board {
         for (int j = 0; j < BOARD_SIZE; j++) {
             Tile[] line = new Tile[BOARD_SIZE];
             for (int i = 0; i < BOARD_SIZE; i++) {
-                line[i] = board[i][j]; // Extract column
+                line[i] = board[i][j]; 
             }
             Tile[] newLine = shiftAndMerge(line);
             for (int i = 0; i < BOARD_SIZE; i++) {
                 if (!board[i][j].equals(newLine[i])) {
                     moved = true;
                 }
-                board[i][j] = newLine[i]; // Update column
+                board[i][j] = newLine[i]; 
             }
         }
         if (moved) generateRandomTile();
@@ -102,14 +102,14 @@ public class Board {
         for (int j = 0; j < BOARD_SIZE; j++) {
             Tile[] line = new Tile[BOARD_SIZE];
             for (int i = 0; i < BOARD_SIZE; i++) {
-                line[i] = board[BOARD_SIZE - 1 - i][j]; // Reverse column
+                line[i] = board[BOARD_SIZE - 1 - i][j]; 
             }
             Tile[] newLine = shiftAndMerge(line);
             for (int i = 0; i < BOARD_SIZE; i++) {
                 if (!board[BOARD_SIZE - 1 - i][j].equals(newLine[i])) {
                     moved = true;
                 }
-                board[BOARD_SIZE - 1 - i][j] = newLine[i]; // Reverse back
+                board[BOARD_SIZE - 1 - i][j] = newLine[i];
             }
         }
         if (moved) generateRandomTile();
@@ -132,7 +132,7 @@ public class Board {
             }
         }
         for (int i = insertPos; i < BOARD_SIZE; i++) {
-            result[i] = new Tile(0); // Fill the remaining empty slots
+            result[i] = new Tile(0);
         }
         return result;
     }

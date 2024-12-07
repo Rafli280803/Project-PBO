@@ -6,34 +6,50 @@ import javax.swing.border.EmptyBorder;
 public class Game2048 extends JPanel {
     private static final int TILE_SIZE = 100;
     private static final int TILE_MARGIN = 16;
-    private static final int PADDING = 20; // Tambahkan padding di sekitar panel
+    private static final int PADDING = 20;
     private static final Color BG_COLOR = new Color(0xbbada0);
-    private static final String BACKGROUND_IMAGE_PATH = "background.jpg"; // Set path for your background image
+    private static final String BACKGROUND_IMAGE_PATH = "Assets\\Untitled.png";
 
     private Board board;
     private boolean moved, gameOver, gameWon;
     private Image backgroundImage;
+    private JLabel gifLabel; 
+    private String gifPath;
+    private String bgmPath;
 
     public Game2048() {
         setFocusable(true);
+        setLayout(new BorderLayout());
         setPreferredSize(new Dimension(
                 4 * (TILE_SIZE + TILE_MARGIN) + PADDING * 2,
-                4 * (TILE_SIZE + TILE_MARGIN) + PADDING * 2
+                4 * (TILE_SIZE + TILE_MARGIN) + PADDING * 2 + 150
         ));
-        setBorder(new EmptyBorder(PADDING, PADDING, PADDING, PADDING)); // Tambahkan padding di sekitar panel
+        setBorder(new EmptyBorder(PADDING, PADDING, PADDING, PADDING));
         board = new Board();
 
-        // Load background image
-        try {
-            backgroundImage = new ImageIcon(BACKGROUND_IMAGE_PATH).getImage();
-        } catch (Exception e) {
-            backgroundImage = null; // Use a solid color background if image fails to load
+        gifPath = DatabaseHelper.getGifPath();
+        bgmPath = DatabaseHelper.getBgmPath();
+
+        if (bgmPath != null) {
+            PlayBGM playBGM = new PlayBGM(bgmPath);
+            playBGM.start();
         }
+
+        backgroundImage = new ImageIcon(BACKGROUND_IMAGE_PATH).getImage();
+
+        gifLabel = new JLabel();
+        gifLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        if (gifPath != null) {
+            gifLabel.setIcon(new ImageIcon(gifPath));
+        }
+        gifLabel.setPreferredSize(new Dimension(getWidth(), 150));
+        gifLabel.setBorder(BorderFactory.createLineBorder(new Color(0x444444), 5, true));
+        add(gifLabel, BorderLayout.NORTH);
 
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (gameOver || gameWon) return; // Disable input after the game is over or won
+                if (gameOver || gameWon) return;
 
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_LEFT -> moved = board.moveLeft();
@@ -55,19 +71,44 @@ public class Game2048 extends JPanel {
         });
     }
 
+    private void showEndGamePopup() {
+        String message = gameWon ? "Congratulations! You Win!" : "Game Over!";
+        int choice = JOptionPane.showOptionDialog(
+                this,
+                message + "\nWould you like to Retry or Quit?",
+                "Game Over",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                new String[]{"Retry", "Quit"},
+                "Retry"
+        );
+
+        if (choice == JOptionPane.YES_OPTION) {
+            resetGame();
+        } else if (choice == JOptionPane.NO_OPTION) {
+            System.exit(0);
+        }
+    }
+
+    private void resetGame() {
+        board = new Board();
+        gameOver = false;
+        gameWon = false;
+        repaint();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        // Draw the background
         if (backgroundImage != null) {
-            g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+            g.drawImage(backgroundImage, 0, 150, getWidth(), getHeight() - 150, this);
         } else {
             g.setColor(BG_COLOR);
-            g.fillRect(0, 0, getWidth(), getHeight());
+            g.fillRect(0, 150, getWidth(), getHeight() - 150);
         }
 
-        // Draw tiles
         Tile[][] tiles = board.getBoard();
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
@@ -75,7 +116,6 @@ public class Game2048 extends JPanel {
             }
         }
 
-        // Draw score
         g.setColor(Color.BLACK);
         g.setFont(new Font("Arial", Font.PLAIN, 24));
         g.drawString("Score: " + board.getScore(), PADDING, getHeight() - PADDING);
@@ -83,7 +123,7 @@ public class Game2048 extends JPanel {
 
     private void drawTile(Graphics g, Tile tile, int x, int y) {
         int xOffset = PADDING + x * (TILE_SIZE + TILE_MARGIN) + TILE_MARGIN;
-        int yOffset = PADDING + y * (TILE_SIZE + TILE_MARGIN) + TILE_MARGIN;
+        int yOffset = PADDING + y * (TILE_SIZE + TILE_MARGIN) + TILE_MARGIN + 150;
         g.setColor(tile.isEmpty() ? BG_COLOR : getTileColor(tile.getValue()));
         g.fillRoundRect(xOffset, yOffset, TILE_SIZE, TILE_SIZE, 10, 10);
 
@@ -113,33 +153,6 @@ public class Game2048 extends JPanel {
             case 2048 -> new Color(0xedc22e);
             default -> new Color(0x3c3a32);
         };
-    }
-
-    private void showEndGamePopup() {
-        String message = gameWon ? "Congratulations! You Win!" : "Game Over!";
-        int choice = JOptionPane.showOptionDialog(
-                this,
-                message + "\nWould you like to Retry or Quit?",
-                "Game Over",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.INFORMATION_MESSAGE,
-                null,
-                new String[]{"Retry", "Quit"},
-                "Retry"
-        );
-
-        if (choice == JOptionPane.YES_OPTION) {
-            resetGame();
-        } else if (choice == JOptionPane.NO_OPTION) {
-            System.exit(0);
-        }
-    }
-
-    private void resetGame() {
-        board = new Board(); // Reset the board
-        gameOver = false;
-        gameWon = false;
-        repaint();
     }
 
     public static void main(String[] args) {
