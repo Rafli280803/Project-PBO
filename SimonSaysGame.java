@@ -1,8 +1,11 @@
-// package Gamekedua;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
@@ -18,8 +21,10 @@ public class SimonSaysGame extends JFrame {
     private ExecutorService executorService;
     private int level;
     private boolean gameStarted;
+    private int userId; // ID pengguna
 
-    public SimonSaysGame() {
+    public SimonSaysGame(int userId) { // Menerima ID pengguna sebagai parameter
+        this.userId = userId; // Set ID pengguna
         setTitle("Simon Says");
         setSize(400, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -41,11 +46,11 @@ public class SimonSaysGame extends JFrame {
 
     private void createButtonPanel() {
         JPanel buttonPanel = new JPanel(new GridLayout(3, 3, 10, 10));
-        buttonPanel.setBackground(Color.BLACK); // Ubah warna latar belakang menjadi hitam
+        buttonPanel.setBackground(Color.BLACK);
         for (int i = 0; i < 9; i++) {
             JButton button = new JButton();
-            button.setBackground(getButtonColor(i)); // Set warna tombol
-            button.setOpaque(true); // Pastikan tombol tidak transparan
+            button.setBackground(getButtonColor(i));
+            button.setOpaque(true);
             button.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
             button.addActionListener(new ButtonClickListener(i));
             button.setEnabled(false);
@@ -80,14 +85,78 @@ public class SimonSaysGame extends JFrame {
 
     public void endGame(boolean won) {
         gameStarted = false;
-        if (won) {
-            statusLabel.setText("Anda Menang! Tekan Start untuk bermain lagi.");
+    
+        // Simpan level terakhir ke database
+        saveMaxLevelToDatabase(level - 1);
+    
+        String message = won ? "Anda Menang! " : "Game Over! ";
+        message += "Pilih opsi di bawah ini.";
+    
+        int choice = JOptionPane.showOptionDialog(this,
+                message,
+                "Game Over",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                new Object[]{"Play Again", "Back to Home"},
+                null);
+    
+        if (choice == JOptionPane.YES_OPTION) {
+            startGame(); // Mulai ulang permainan
         } else {
-            statusLabel.setText("Game Over! Tekan Start untuk coba lagi.");
+            // Kembali ke HomePage
+            SwingUtilities.invokeLater(() -> {
+                dispose(); // Tutup game saat kembali ke Home
+            });
         }
-        startButton.setEnabled(true);
-        resetButtons();
     }
+    
+    public void saveMaxLevelToDatabase(int lastLevel) {
+        String dbUrl = "jdbc:mysql://localhost:3306/memory_game"; // URL database MySQL
+        String dbUser = "root"; // Username MySQL
+        String dbPassword = ""; // Password MySQL
+    
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
+            System.out.println("Koneksi berhasil!");
+    
+            // Cek level maksimum yang sudah disimpan
+            String checkQuery = "SELECT max_level FROM user_progress WHERE user_id = ?";
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkQuery)) {
+                checkStmt.setInt(1, userId);
+                ResultSet rs = checkStmt.executeQuery();
+    
+                if (rs.next()) {
+                    int savedLevel = rs.getInt("max_level");
+                    System.out.println("Level yang disimpan: " + savedLevel);
+    
+                    // Jika level baru lebih tinggi, update level maksimum
+                    if (lastLevel > savedLevel) {
+                        String updateQuery = "UPDATE user_progress SET max_level = ? WHERE user_id = ?";
+                        try (PreparedStatement updateStmt = conn.prepareStatement(updateQuery)) {
+                            updateStmt.setInt(1, lastLevel);
+                            updateStmt.setInt(2, userId);
+                            updateStmt.executeUpdate();
+                            System.out.println("Level diperbarui menjadi: " + lastLevel);
+                        }
+                    } else {
+                        System.out.println("Level baru tidak lebih tinggi, tidak ada perubahan.");
+                    }
+                } else {
+                    // Jika pengguna belum ada, insert level maksimum
+                    String insertQuery = "INSERT INTO user_progress (user_id, max_level) VALUES (?, ?)";
+                    try (PreparedStatement insertStmt = conn.prepareStatement(insertQuery)) {
+                        insertStmt.setInt(1, userId);
+                        insertStmt.setInt(2, lastLevel);
+                        insertStmt.executeUpdate();
+                        System.out.println("Level disimpan untuk pengguna baru: " + lastLevel);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Terjadi kesalahan saat menyimpan level: " + e.getMessage());
+        }
+    }
+    
 
     public void generateSequence() {
         for (int i = 0; i < level; i++) {
@@ -99,7 +168,7 @@ public class SimonSaysGame extends JFrame {
         executorService.submit(() -> {
             disableButtons();
             try {
-                Thread.sleep(3000); // Tunggu 3 detik sebelum menunjukkan urutan
+                Thread.sleep(3000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -110,7 +179,7 @@ public class SimonSaysGame extends JFrame {
             enableButtons();
             SwingUtilities.invokeLater(() -> {
                 statusLabel.setText("Giliran Anda! Tekan tombol sesuai urutan.");
-                currentInputIndex = 0; // Reset indeks input pengguna
+                currentInputIndex = 0;
             });
         });
     }
@@ -164,7 +233,7 @@ public class SimonSaysGame extends JFrame {
         switch (index) {
             case 0: return new Color(128, 0, 128); // Ungu
             case 1: return new Color(0, 255, 0); // Hijau terang
-            case 2: return new Color(0, 0, 255); // Biru terang
+            case 2: return new Color(255, 0, 0); // Merah terang
             case 3: return new Color(255, 165, 0); // Oranye terang
             case 4: return new Color(0, 255, 255); // Cyan terang
             case 5: return new Color(255, 0, 255); // Magenta terang
@@ -202,7 +271,7 @@ public class SimonSaysGame extends JFrame {
                     }
                 }
             } else {
-                endGame(false); // Akhiri permainan jika tombol yang salah ditekan
+                endGame(false);
             }
         }
 
@@ -233,7 +302,8 @@ public class SimonSaysGame extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            SimonSaysGame game = new SimonSaysGame();
+            // Misalkan user ID adalah 1, Anda bisa mengubahnya sesuai dengan pengguna yang masuk
+            SimonSaysGame game = new SimonSaysGame(1); 
             game.setVisible(true);
         });
     }

@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.sql.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
@@ -8,7 +9,7 @@ public class Game2048 extends JPanel {
     private static final int TILE_MARGIN = 16;
     private static final int PADDING = 20;
     private static final Color BG_COLOR = new Color(0xbbada0);
-    private static final String BACKGROUND_IMAGE_PATH = "Assets\\Untitled.png";
+    private static final String BACKGROUND_IMAGE_PATH = "Image\\BG2048.png";
 
     private Board board;
     private boolean moved, gameOver, gameWon;
@@ -16,8 +17,10 @@ public class Game2048 extends JPanel {
     private JLabel gifLabel; 
     private String gifPath;
     private String bgmPath;
+    private JFrame frame; 
 
-    public Game2048() {
+    public Game2048(JFrame frame) {
+        this.frame = frame;
         setFocusable(true);
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(
@@ -65,6 +68,7 @@ public class Game2048 extends JPanel {
 
                     if (gameOver || gameWon) {
                         showEndGamePopup();
+                        saveScoreToDatabase(board.getScore());
                     }
                 }
             }
@@ -72,24 +76,24 @@ public class Game2048 extends JPanel {
     }
 
     private void showEndGamePopup() {
-        String message = gameWon ? "Congratulations! You Win!" : "Game Over!";
+        String message = "Game Over! Would you like to Retry or Quit?";
         int choice = JOptionPane.showOptionDialog(
-                this,
-                message + "\nWould you like to Retry or Quit?",
-                "Game Over",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.INFORMATION_MESSAGE,
-                null,
-                new String[]{"Retry", "Quit"},
-                "Retry"
+            this,
+            message,
+            "Game Over",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.INFORMATION_MESSAGE,
+            null,
+            new String[]{"Retry", "Quit"},
+            "Retry"
         );
 
         if (choice == JOptionPane.YES_OPTION) {
             resetGame();
         } else if (choice == JOptionPane.NO_OPTION) {
-            System.exit(0);
+            frame.dispose();
         }
-    }
+    }    
 
     private void resetGame() {
         board = new Board();
@@ -155,13 +159,44 @@ public class Game2048 extends JPanel {
         };
     }
 
+    private void saveScoreToDatabase(int score) {
+        String dbUrl = "jdbc:mysql://localhost:3306/gamecenter"; // URL of MySQL database
+        String dbUser = "root"; // MySQL username
+        String dbPassword = ""; // MySQL password
+    
+        // Use try-with-resources to automatically close resources
+        String query = "INSERT INTO leaderboard (score) VALUES (?)";
+    
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            
+            // Set the score to be saved
+            pstmt.setInt(1, score);
+            
+            // Execute the insert
+            int rowsAffected = pstmt.executeUpdate();
+    
+            // Optionally, print the result for confirmation
+            if (rowsAffected > 0) {
+                System.out.println("Score saved successfully!");
+            } else {
+                System.out.println("Failed to save score.");
+            }
+        } catch (SQLException e) {
+            // Handle the exception with proper error message
+            System.err.println("Error while saving score to database: " + e.getMessage());
+        }
+    }
+    
     public static void main(String[] args) {
-        JFrame frame = new JFrame("2048 Game");
-        Game2048 gamePanel = new Game2048();
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.add(gamePanel);
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("2048 Game");
+            Game2048 gamePanel = new Game2048(frame); // Pass the frame to the constructor
+            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            frame.add(gamePanel);
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        });
     }
 }

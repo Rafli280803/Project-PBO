@@ -2,16 +2,16 @@ import java.sql.*;
 
 public class DatabaseHelper {
 
-    private static final String URL = "jdbc:mysql://localhost:3306/game2048";
+    private static final String URL = "jdbc:mysql://localhost:3306/gamecenter";
     private static final String USERNAME = "root";
     private static final String PASSWORD = "";
 
     public static String getGifPath() {
-        return getPathFromDatabase("SELECT file_path FROM gif");
+        return getPathFromDatabase("SELECT file_path FROM gif where gif_id = 1");
     }
 
     public static String getBgmPath() {
-        return getPathFromDatabase("SELECT file_path FROM bgm");
+        return getPathFromDatabase("SELECT file_path FROM bgm where bgm_id = 1");
     }
 
     private static String getPathFromDatabase(String query) {
