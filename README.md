@@ -10,3 +10,12 @@ Aplikasi ini dirancang dengan fokus pada efisiensi sumber daya perangkat, sehing
 - **Mulai Bermain**: Pengguna dapat langsung memulai permainan dengan tantangan yang sesuai dengan pilihan.
 - **Pencatatan Skor**: Skor pemain secara otomatis tercatat di akhir permainan untuk melacak pencapaian mereka.
 - **Pilihan Ulang**: Setelah menyelesaikan permainan, pengguna dapat kembali ke menu utama untuk memilih permainan lain atau mengulangi permainan yang sama.
+
+## Cara Pakai
+
+sebelum menjalankan program, pastikan sudah menambahkan library jdbc pada projek dengan langkah :
+- buka setting,
+- lanjutkan dengan mengakses command palete
+- lalu memilih section libraries
+- pilih tambah library, kemudian pilih file jdbc (.jar)
+- setelah itu apply.
