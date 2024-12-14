@@ -9,7 +9,7 @@ public class Game2048 extends JPanel {
     private static final int TILE_MARGIN = 16;
     private static final int PADDING = 20;
     private static final Color BG_COLOR = new Color(0xbbada0);
-    private static final String BACKGROUND_IMAGE_PATH = "Image\\BG2048.png";
+    private static final String BACKGROUND_IMAGE_PATH = "Image/BG2048.png";
 
     private Board board;
     private boolean moved, gameOver, gameWon;
@@ -19,81 +19,94 @@ public class Game2048 extends JPanel {
     private String bgmPath;
     private JFrame frame; 
 
-    public Game2048(JFrame frame) {
-        this.frame = frame;
-        setFocusable(true);
-        setLayout(new BorderLayout());
-        setPreferredSize(new Dimension(
-                4 * (TILE_SIZE + TILE_MARGIN) + PADDING * 2,
-                4 * (TILE_SIZE + TILE_MARGIN) + PADDING * 2 + 150
-        ));
-        setBorder(new EmptyBorder(PADDING, PADDING, PADDING, PADDING));
-        board = new Board();
+    private PlayBGM playBGM; // Tambahkan ini
 
-        gifPath = DatabaseHelper.getGifPath();
-        bgmPath = DatabaseHelper.getBgmPath();
+public Game2048(JFrame frame) {
+    this.frame = frame;
+    setFocusable(true);
+    setLayout(new BorderLayout());
+    setPreferredSize(new Dimension(
+            4 * (TILE_SIZE + TILE_MARGIN) + PADDING * 2,
+            4 * (TILE_SIZE + TILE_MARGIN) + PADDING * 2 + 150
+    ));
+    setBorder(new EmptyBorder(PADDING, PADDING, PADDING, PADDING));
+    board = new Board();
 
-        if (bgmPath != null) {
-            PlayBGM playBGM = new PlayBGM(bgmPath);
-            playBGM.start();
-        }
+    gifPath = DatabaseHelper.getGifPath();
+    bgmPath = DatabaseHelper.getBgmPath();
 
-        backgroundImage = new ImageIcon(BACKGROUND_IMAGE_PATH).getImage();
-
-        gifLabel = new JLabel();
-        gifLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        if (gifPath != null) {
-            gifLabel.setIcon(new ImageIcon(gifPath));
-        }
-        gifLabel.setPreferredSize(new Dimension(getWidth(), 150));
-        gifLabel.setBorder(BorderFactory.createLineBorder(new Color(0x444444), 5, true));
-        add(gifLabel, BorderLayout.NORTH);
-
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (gameOver || gameWon) return;
-
-                switch (e.getKeyCode()) {
-                    case KeyEvent.VK_LEFT -> moved = board.moveLeft();
-                    case KeyEvent.VK_RIGHT -> moved = board.moveRight();
-                    case KeyEvent.VK_UP -> moved = board.moveUp();
-                    case KeyEvent.VK_DOWN -> moved = board.moveDown();
-                }
-
-                if (moved) {
-                    gameOver = board.isGameOver();
-                    gameWon = board.hasWon();
-                    repaint();
-
-                    if (gameOver || gameWon) {
-                        showEndGamePopup();
-                        saveScoreToDatabase(board.getScore());
-                    }
-                }
-            }
-        });
+    if (bgmPath != null) {
+        playBGM = new PlayBGM(bgmPath);
+        playBGM.start();
     }
 
-    private void showEndGamePopup() {
-        String message = "Game Over! Would you like to Retry or Quit?";
-        int choice = JOptionPane.showOptionDialog(
-            this,
-            message,
-            "Game Over",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.INFORMATION_MESSAGE,
-            null,
-            new String[]{"Retry", "Quit"},
-            "Retry"
-        );
+    backgroundImage = new ImageIcon(BACKGROUND_IMAGE_PATH).getImage();
 
-        if (choice == JOptionPane.YES_OPTION) {
-            resetGame();
-        } else if (choice == JOptionPane.NO_OPTION) {
-            frame.dispose();
+    gifLabel = new JLabel();
+    gifLabel.setHorizontalAlignment(SwingConstants.CENTER);
+    if (gifPath != null) {
+        gifLabel.setIcon(new ImageIcon(gifPath));
+    }
+    gifLabel.setPreferredSize(new Dimension(getWidth(), 150));
+    gifLabel.setBorder(BorderFactory.createLineBorder(new Color(0x444444), 5, true));
+    add(gifLabel, BorderLayout.NORTH);
+
+    addKeyListener(new KeyAdapter() {
+        @Override
+        public void keyPressed(KeyEvent e) {
+            if (gameOver || gameWon) return;
+
+            switch (e.getKeyCode()) {
+                case KeyEvent.VK_LEFT -> moved = board.moveLeft();
+                case KeyEvent.VK_RIGHT -> moved = board.moveRight();
+                case KeyEvent.VK_UP -> moved = board.moveUp();
+                case KeyEvent.VK_DOWN -> moved = board.moveDown();
+            }
+
+            if (moved) {
+                gameOver = board.isGameOver();
+                gameWon = board.hasWon();
+                repaint();
+
+                if (gameOver || gameWon) {
+                    showEndGamePopup();
+                    saveScoreToDatabase(board.getScore());
+                }
+            }
         }
-    }    
+    });
+}
+
+private void stopBackSound() {
+    if (playBGM != null) {
+        playBGM.stopBGM();
+        playBGM = null;
+    }
+}
+
+
+private void showEndGamePopup() {
+    String message = "Game Over! Would you like to Retry or Back to Home?";
+    int choice = JOptionPane.showOptionDialog(
+        this,
+        message,
+        "Game Over",
+        JOptionPane.YES_NO_OPTION,
+        JOptionPane.INFORMATION_MESSAGE,
+        null,
+        new String[]{"Retry", "Home"},
+        "Retry"
+    );
+
+    stopBackSound(); // Tambahkan ini untuk menghentikan back sound
+
+    if (choice == JOptionPane.YES_OPTION) {
+        resetGame();
+    } else if (choice == JOptionPane.NO_OPTION) {
+        frame.dispose();
+    }
+}
+
 
     private void resetGame() {
         board = new Board();

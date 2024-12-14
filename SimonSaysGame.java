@@ -1,11 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
@@ -23,8 +19,8 @@ public class SimonSaysGame extends JFrame {
     private boolean gameStarted;
     private int userId; // ID pengguna
 
-    public SimonSaysGame(int userId) { // Menerima ID pengguna sebagai parameter
-        this.userId = userId; // Set ID pengguna
+    public SimonSaysGame(int userId) {
+        this.userId = userId;
         setTitle("Simon Says");
         setSize(400, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -85,13 +81,13 @@ public class SimonSaysGame extends JFrame {
 
     public void endGame(boolean won) {
         gameStarted = false;
-    
+
         // Simpan level terakhir ke database
-        saveMaxLevelToDatabase(level - 1);
-    
+        saveLevelToDatabase(level);
+
         String message = won ? "Anda Menang! " : "Game Over! ";
         message += "Pilih opsi di bawah ini.";
-    
+
         int choice = JOptionPane.showOptionDialog(this,
                 message,
                 "Game Over",
@@ -100,7 +96,7 @@ public class SimonSaysGame extends JFrame {
                 null,
                 new Object[]{"Play Again", "Back to Home"},
                 null);
-    
+
         if (choice == JOptionPane.YES_OPTION) {
             startGame(); // Mulai ulang permainan
         } else {
@@ -110,53 +106,27 @@ public class SimonSaysGame extends JFrame {
             });
         }
     }
-    
-    public void saveMaxLevelToDatabase(int lastLevel) {
-        String dbUrl = "jdbc:mysql://localhost:3306/memory_game"; // URL database MySQL
+
+    public void saveLevelToDatabase(int currentLevel) {
+        String dbUrl = "jdbc:mysql://localhost:3306/gamecenter"; // URL database MySQL
         String dbUser = "root"; // Username MySQL
         String dbPassword = ""; // Password MySQL
-    
+
         try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
             System.out.println("Koneksi berhasil!");
-    
-            // Cek level maksimum yang sudah disimpan
-            String checkQuery = "SELECT max_level FROM user_progress WHERE user_id = ?";
-            try (PreparedStatement checkStmt = conn.prepareStatement(checkQuery)) {
-                checkStmt.setInt(1, userId);
-                ResultSet rs = checkStmt.executeQuery();
-    
-                if (rs.next()) {
-                    int savedLevel = rs.getInt("max_level");
-                    System.out.println("Level yang disimpan: " + savedLevel);
-    
-                    // Jika level baru lebih tinggi, update level maksimum
-                    if (lastLevel > savedLevel) {
-                        String updateQuery = "UPDATE user_progress SET max_level = ? WHERE user_id = ?";
-                        try (PreparedStatement updateStmt = conn.prepareStatement(updateQuery)) {
-                            updateStmt.setInt(1, lastLevel);
-                            updateStmt.setInt(2, userId);
-                            updateStmt.executeUpdate();
-                            System.out.println("Level diperbarui menjadi: " + lastLevel);
-                        }
-                    } else {
-                        System.out.println("Level baru tidak lebih tinggi, tidak ada perubahan.");
-                    }
-                } else {
-                    // Jika pengguna belum ada, insert level maksimum
-                    String insertQuery = "INSERT INTO user_progress (user_id, max_level) VALUES (?, ?)";
-                    try (PreparedStatement insertStmt = conn.prepareStatement(insertQuery)) {
-                        insertStmt.setInt(1, userId);
-                        insertStmt.setInt(2, lastLevel);
-                        insertStmt.executeUpdate();
-                        System.out.println("Level disimpan untuk pengguna baru: " + lastLevel);
-                    }
-                }
+
+            // Simpan level pengguna
+            String insertQuery = "INSERT INTO user_levels (user_id, level) VALUES (?, ?)";
+            try (PreparedStatement insertStmt = conn.prepareStatement(insertQuery)) {
+                insertStmt.setInt(1, userId);
+                insertStmt.setInt(2, currentLevel);
+                insertStmt.executeUpdate();
+                System.out.println("Level disimpan: " + currentLevel);
             }
         } catch (SQLException e) {
             System.out.println("Terjadi kesalahan saat menyimpan level: " + e.getMessage());
         }
     }
-    
 
     public void generateSequence() {
         for (int i = 0; i < level; i++) {
@@ -303,7 +273,7 @@ public class SimonSaysGame extends JFrame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             // Misalkan user ID adalah 1, Anda bisa mengubahnya sesuai dengan pengguna yang masuk
-            SimonSaysGame game = new SimonSaysGame(1); 
+            SimonSaysGame game = new SimonSaysGame(1);
             game.setVisible(true);
         });
     }

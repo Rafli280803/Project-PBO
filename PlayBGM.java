@@ -3,23 +3,35 @@ import java.io.IOException;
 import javax.sound.sampled.*;
 
 public class PlayBGM extends Thread {
-    private String bgmPath;
+    private String filePath;
+    private boolean running = true;
 
-    public PlayBGM(String bgmPath) {
-        this.bgmPath = bgmPath;
+    public PlayBGM(String filePath) {
+        this.filePath = filePath;
     }
 
     @Override
     public void run() {
         try {
-            File musicFile = new File(bgmPath);
-            AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicFile);
+            // Load and play the audio file (example using JavaFX MediaPlayer or another library)
             Clip clip = AudioSystem.getClip();
-            clip.open(audioStream);
-            clip.start();
-            Thread.sleep(clip.getMicrosecondLength() / 1000); 
-        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException | InterruptedException e) {
+            AudioInputStream inputStream = AudioSystem.getAudioInputStream(new File(filePath));
+            clip.open(inputStream);
+            clip.loop(Clip.LOOP_CONTINUOUSLY);
+
+            while (running) {
+                Thread.sleep(100); // Allow the thread to check for `running` flag
+            }
+
+            clip.stop();
+            clip.close();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+    public void stopBGM() {
+        running = false;
+    }
 }
+
