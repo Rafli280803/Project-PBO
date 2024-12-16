@@ -4,10 +4,76 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.sql.*;
 
+// Define the Game interface
+interface Game {
+    void launch();
+}
+
+// Create an abstract class for game launching
+abstract class AbstractGameLauncher implements Game {
+    protected String gameName;
+
+    public AbstractGameLauncher(String gameName) {
+        this.gameName = gameName;
+    }
+
+    @Override
+    public abstract void launch();
+}
+
+// Concrete classes for specific games
+class MemoryGameLauncher extends AbstractGameLauncher {
+    public MemoryGameLauncher() {
+        super("Memory Game");
+    }
+
+    @Override
+    public void launch() {
+        SwingUtilities.invokeLater(() -> {
+            MemoryGame memoryGame = new MemoryGame();
+            memoryGame.setVisible(true);
+        });
+    }
+}
+
+class SimonSaysGameLauncher extends AbstractGameLauncher {
+    public SimonSaysGameLauncher() {
+        super("Simon Says");
+    }
+
+    @Override
+    public void launch() {
+        SwingUtilities.invokeLater(() -> {
+            SimonSaysGame game2 = new SimonSaysGame(1);
+            game2.setVisible(true);
+        });
+    }
+}
+
+class Game2048Launcher extends AbstractGameLauncher {
+    public Game2048Launcher() {
+        super("Game 2048");
+    }
+
+    @Override
+    public void launch() {
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("2048 Game");
+            Game2048 gamePanel = new Game2048(frame);
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.add(gamePanel);
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        });
+    }
+}
+
+// Main class for the home page
 public class HomePage extends JFrame {
     private JLabel profilePictureLabel;
-    private String profilePicturePath = "Image/profile.jpeg"; 
-    private String userName = "Kelomok 21"; 
+    private String profilePicturePath = "Image/profile.jpeg";
+    private String userName = "Kelompok 21";
 
     public HomePage() {
         setTitle("Game Center");
@@ -21,9 +87,9 @@ public class HomePage extends JFrame {
 
         // Main Panel
         JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new GridLayout(5, 1, 10, 10)); 
+        mainPanel.setLayout(new GridLayout(5, 1, 10, 10));
         mainPanel.setBackground(Color.BLACK);
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20)); 
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Title
         JLabel title = new JLabel("Choose Game", SwingConstants.CENTER);
@@ -32,9 +98,9 @@ public class HomePage extends JFrame {
         mainPanel.add(title);
 
         // Game Buttons
-        JButton memoryGameButton = createGameButton("Memory Game", e -> launchMemoryGame());
-        JButton game2Button = createGameButton("Simon Says", e -> launchGame2());
-        JButton game3Button = createGameButton("Game 2048", e -> launchGame3());
+        JButton memoryGameButton = createGameButton("Memory Game", e -> new MemoryGameLauncher().launch());
+        JButton game2Button = createGameButton("Simon Says", e -> new SimonSaysGameLauncher().launch());
+        JButton game3Button = createGameButton("Game 2048", e -> new Game2048Launcher().launch());
 
         mainPanel.add(memoryGameButton);
         mainPanel.add(game2Button);
@@ -52,7 +118,7 @@ public class HomePage extends JFrame {
         ImageIcon profilePicture = new ImageIcon(profilePicturePath);
         Image scaledImage = profilePicture.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH);
         profilePictureLabel = new JLabel(new ImageIcon(scaledImage));
-        
+
         profilePictureLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -70,12 +136,12 @@ public class HomePage extends JFrame {
         JButton button = new JButton(text);
         button.setFont(new Font("Arial", Font.PLAIN, 18));
         button.setForeground(Color.WHITE);
-        button.setBackground(Color.BLUE); 
+        button.setBackground(Color.BLUE);
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createRaisedBevelBorder());
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         button.addActionListener(action);
-        
+
         // Add hover effect
         button.addMouseListener(new MouseAdapter() {
             @Override
@@ -88,34 +154,8 @@ public class HomePage extends JFrame {
                 button.setBackground(Color.BLUE);
             }
         });
-        
+
         return button;
-    }
-
-    private void launchMemoryGame() {
-        SwingUtilities.invokeLater(() -> {
-            MemoryGame memoryGame = new MemoryGame();
-            memoryGame.setVisible(true);
-        });
-    }
-
-    private void launchGame2() {
-        SwingUtilities.invokeLater(() -> {
-            SimonSaysGame game2 = new SimonSaysGame(1); 
-            game2.setVisible(true);
-        });
-    }
-
-    private void launchGame3() {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("2048 Game");
-            Game2048 gamePanel = new Game2048(frame);
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.add(gamePanel);
-            frame.pack();
-            frame.setLocationRelativeTo(null);
-            frame.setVisible(true);
-        });
     }
 
     private void showProfile() {
@@ -131,14 +171,14 @@ public class HomePage extends JFrame {
         // Profile Picture
         ImageIcon profilePicture = new ImageIcon(profilePicturePath);
         JLabel profilePicLabel = new JLabel(new ImageIcon(profilePicture.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH)));
-        profilePicLabel.setAlignmentX(Component.CENTER_ALIGNMENT); 
+        profilePicLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         contentPanel.add(profilePicLabel);
 
         // User Name Label
         JLabel userNameLabel = new JLabel(userName);
         userNameLabel.setFont(new Font("Arial", Font.BOLD, 16));
         userNameLabel.setForeground(Color.WHITE);
-        userNameLabel.setAlignmentX(Component.CENTER_ALIGNMENT); 
+        userNameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         contentPanel.add(userNameLabel);
 
         dialog.add(contentPanel, BorderLayout.CENTER);
@@ -147,12 +187,12 @@ public class HomePage extends JFrame {
         JPanel leaderboardPanel = new JPanel();
         leaderboardPanel.setLayout(new BoxLayout(leaderboardPanel, BoxLayout.Y_AXIS));
         leaderboardPanel.setBackground(Color.BLACK);
-        leaderboardPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); 
+        leaderboardPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JLabel leaderboardLabel = new JLabel("Leaderboard");
         leaderboardLabel.setFont(new Font("Arial", Font.BOLD, 20));
-        leaderboardLabel.setForeground(Color.WHITE); 
-        leaderboardLabel.setAlignmentX(Component.CENTER_ALIGNMENT); 
+        leaderboardLabel.setForeground(Color.WHITE);
+        leaderboardLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         leaderboardPanel.add(leaderboardLabel);
 
         // Game Options Panel
@@ -170,11 +210,10 @@ public class HomePage extends JFrame {
         gameOptionsPanel.add(simonSaysLeaderboardButton);
         gameOptionsPanel.add(game2048LeaderboardButton);
 
-        leaderboardPanel.add(Box.createRigidArea(new Dimension(0, 10))); 
+        leaderboardPanel.add(Box.createRigidArea(new Dimension(0, 10)));
         leaderboardPanel.add(gameOptionsPanel);
 
         dialog.add(leaderboardPanel, BorderLayout.SOUTH);
-
         dialog.setVisible(true);
     }
 
@@ -210,7 +249,7 @@ public class HomePage extends JFrame {
         try (Connection conn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
              PreparedStatement stmt = conn.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
-             
+
             while (rs.next()) {
                 switch (gameName) {
                     case "Memory Game":
